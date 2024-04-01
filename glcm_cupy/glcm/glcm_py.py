@@ -4,6 +4,7 @@ import cupy as cp
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 from tqdm import tqdm
+from typing import Tuple, Dict
 
 from glcm_cupy.conf import NO_OF_FEATURES, ndarray
 from glcm_cupy.glcm_py_base import GLCMPyBase
@@ -12,22 +13,26 @@ from glcm_cupy.utils import normalize_features
 
 def glcm_py_im(ar: ndarray, bin_from: int, bin_to: int,
                radius: int = 2,
-               step: int = 1):
+               step: int = 1,
+               skip_border = False):
     return GLCMPy(bin_from=bin_from,
                   bin_to=bin_to,
                   radius=radius,
-                  step=step).glcm_im(ar)
+                  step=step,
+                  skip_border=skip_border).glcm_im(ar)
 
 
 def glcm_py_chn(ar: cp.ndarray,
                 bin_from: int,
                 bin_to: int,
                 radius: int = 2,
-                step: int = 1):
+                step: int = 1,
+                skip_border = False):
     return GLCMPy(bin_from=bin_from,
                   bin_to=bin_to,
                   radius=radius,
-                  step=step).glcm_chn(ar)
+                  step=step,
+                  skip_border=skip_border).glcm_chn(ar)
 
 
 def glcm_py_ij(i: cp.ndarray,
@@ -40,6 +45,7 @@ def glcm_py_ij(i: cp.ndarray,
 @dataclass
 class GLCMPy(GLCMPyBase):
     step: int = 1
+    skip_border: bool = False
 
     def glcm_chn(self, ar: cp.ndarray):
 
@@ -62,6 +68,8 @@ class GLCMPy(GLCMPyBase):
             (ar_w_j_sw, ar_w_j_s, ar_w_j_se, ar_w_j_e)):
             for e, (i, j) in tqdm(enumerate(zip(ar_w_i, ar_w_j)),
                                   total=ar_w_i.shape[0]):
+                if self.skip_border:
+                    i, j = self._remove_border((i, j), j_e)
                 feature_ar[e, j_e] = self.glcm_ij(i, j)
 
         h, w = ar_w.shape[:2]
@@ -71,6 +79,36 @@ class GLCMPy(GLCMPyBase):
             (h - self.step * 2, w - self.step * 2, NO_OF_FEATURES))
 
         return normalize_features(feature_ar, self.bin_to)
+
+    def _remove_border(self, ij: Tuple[cp.ndarray, cp.ndarray], direction: int) -> Tuple[cp.ndarray, cp.ndarray]:
+        if direction == 0: # Direction.SOUTH_WEST
+            sl = (
+                slice(None, None),
+                slice(None, -self.step_size),
+                slice(self.step_size, None),
+            )
+        elif direction == 1: # Direction.SOUTH
+            sl = (
+                slice(None, None),
+                slice(None, -self.step_size),
+                slice(None, None),
+            )
+        elif direction == 2: # Direction.SOUTH_EAST
+            sl = (
+                slice(None, None),
+                slice(None, -self.step_size),
+                slice(None, -self.step_size),
+            )
+        elif direction == 3:  # Direction.EAST
+            sl = (
+                slice(None, None),
+                slice(None, None),
+                slice(None, -self.step_size),
+            )
+        else:
+            raise ValueError("Invalid Direction")
+
+        return ij[0][sl], ij[1][sl]
 
     def glcm_im(self, ar: ndarray):
         was_cupy = False
