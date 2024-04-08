@@ -51,25 +51,30 @@ class GLCMPy(GLCMPyBase):
 
         ar = (ar / self.bin_from * self.bin_to).astype(cp.uint8)
         ar_w = sliding_window_view(ar, (self.diameter, self.diameter))
-
+        def windows(ar: ndarray):
+            return ar.reshape((-1, self.diameter, self.diameter))
+            
         def flat(ar: ndarray):
-            ar = ar.reshape((-1, self.diameter, self.diameter))
             return ar.reshape((ar.shape[0], -1))
 
-        ar_w_i = flat(ar_w[self.step:-self.step, self.step:-self.step])
-        ar_w_j_sw = flat(ar_w[self.step * 2:, :-self.step * 2])
-        ar_w_j_s = flat(ar_w[self.step * 2:, self.step:-self.step])
-        ar_w_j_se = flat(ar_w[self.step * 2:, self.step * 2:])
-        ar_w_j_e = flat(ar_w[self.step:-self.step, self.step * 2:])
+        ar_w_i = windows(ar_w[self.step:-self.step, self.step:-self.step])
+        ar_w_j_sw = windows(ar_w[self.step * 2:, :-self.step * 2])
+        ar_w_j_s = windows(ar_w[self.step * 2:, self.step:-self.step])
+        ar_w_j_se = windows(ar_w[self.step * 2:, self.step * 2:])
+        ar_w_j_e = windows(ar_w[self.step:-self.step, self.step * 2:])
 
         feature_ar = np.zeros((ar_w_i.shape[0], 4, NO_OF_FEATURES))
 
         for j_e, ar_w_j in enumerate(
             (ar_w_j_sw, ar_w_j_s, ar_w_j_se, ar_w_j_e)):
-            for e, (i, j) in tqdm(enumerate(zip(ar_w_i, ar_w_j)),
-                                  total=ar_w_i.shape[0]):
-                if self.skip_border:
-                    i, j = self._remove_border((i, j), j_e)
+            ar_i, ar_j = ar_w_i, ar_w_j
+            if self.skip_border:
+                ar_i, ar_j = self._remove_border((ar_i, ar_j), j_e)
+            ar_i = flat(ar_i)
+            ar_j = flat(ar_j)
+            for e, (i, j) in tqdm(enumerate(zip(ar_i, ar_j)),
+                                  total=ar_i.shape[0]):
+                
                 feature_ar[e, j_e] = self.glcm_ij(i, j)
 
         h, w = ar_w.shape[:2]
@@ -84,26 +89,26 @@ class GLCMPy(GLCMPyBase):
         if direction == 0: # Direction.SOUTH_WEST
             sl = (
                 slice(None, None),
-                slice(None, -self.step_size),
-                slice(self.step_size, None),
+                slice(None, -self.step),
+                slice(self.step, None),
             )
         elif direction == 1: # Direction.SOUTH
             sl = (
                 slice(None, None),
-                slice(None, -self.step_size),
+                slice(None, -self.step),
                 slice(None, None),
             )
         elif direction == 2: # Direction.SOUTH_EAST
             sl = (
                 slice(None, None),
-                slice(None, -self.step_size),
-                slice(None, -self.step_size),
+                slice(None, -self.step),
+                slice(None, -self.step),
             )
         elif direction == 3:  # Direction.EAST
             sl = (
                 slice(None, None),
                 slice(None, None),
-                slice(None, -self.step_size),
+                slice(None, -self.step),
             )
         else:
             raise ValueError("Invalid Direction")
