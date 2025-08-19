@@ -21,11 +21,17 @@ def glcm_py_skimage(i, j):
     asm = float(greycoprops(glcm, 'ASM').squeeze())
     correlation = float(greycoprops(glcm, 'correlation').squeeze())
     dissimilarity = float(greycoprops(glcm, 'dissimilarity').squeeze())
+    mean = float(greycoprops(glcm, 'mean').squeeze())
+    variance = float(greycoprops(glcm, 'variance').squeeze())
+    entropy = float(greycoprops(glcm, 'entropy').squeeze())
 
     return dict(
         homogeneity=homogeneity,
         contrast=contrast,
         asm=asm,
+        mean=mean,
+        variance=variance,
         correlation=correlation,
-        dissimilarity=dissimilarity
+        dissimilarity=dissimilarity,
+        entropy=entropy,
     )

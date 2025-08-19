@@ -11,14 +11,14 @@ THIS_DIR = Path(__file__).parent
 
 def test_from_3dimage(ar_3d):
     """ Tests using a 3D Image """
-    g = GLCM().run(ar_3d)
+    g = GLCM().run(ar_3d)[:,:,:,:-1] # Discard new feature ENTROPY
     g_exp = np.load(THIS_DIR / "expected/ar_3d_glcm.npy")
     assert g == pytest.approx(g_exp, abs=1e-04)
 
 
 def test_from_2dimage(ar_2d):
     """ Tests with a 2D Image (1 Channel) """
-    g = GLCM().run(ar_2d[..., np.newaxis])
+    g = GLCM().run(ar_2d[..., np.newaxis])[:,:,:,:-1] # Discard new feature ENTROPY
     g_exp = np.load(THIS_DIR / "expected/ar_2d_glcm.npy")
     assert g == pytest.approx(g_exp, abs=1e-04)
 
@@ -30,14 +30,14 @@ def test_output_match(ar_3d):
 
 def test_from_3dimage_cp(ar_3d_cp):
     """ Tests using a 3D Image """
-    g = GLCM().run(ar_3d_cp)
+    g = GLCM().run(ar_3d_cp)[:,:,:,:-1] # Discard new feature ENTROPY
     g_exp = np.load(THIS_DIR / "expected/ar_3d_glcm.npy")
     assert g.get() == pytest.approx(g_exp, abs=1e-04)
 
 
 def test_from_2dimage_cp(ar_2d_cp):
     """ Tests with a 2D Image (1 Channel) """
-    g = GLCM().run(ar_2d_cp[..., np.newaxis])
+    g = GLCM().run(ar_2d_cp[..., np.newaxis])[:,:,:,:-1] # Discard new feature ENTROPY
     g_exp = np.load(THIS_DIR / "expected/ar_2d_glcm.npy")
     assert g.get() == pytest.approx(g_exp, abs=1e-04)
 

@@ -53,8 +53,11 @@ def test_glcm_ij(i, j):
         homogeneity=float(g[..., Features.HOMOGENEITY].sum() / windows),
         contrast=float(g[..., Features.CONTRAST].sum() / windows),
         asm=float(g[..., Features.ASM].sum() / windows),
+        mean=float(g[..., Features.MEAN].sum() / windows),
+        variance=float(g[..., Features.VARIANCE].sum() / windows),
         correlation=float(g[..., Features.CORRELATION].sum() / windows),
-        dissimilarity=float(g[..., Features.DISSIMILARITY].sum() / windows)
+        dissimilarity=float(g[..., Features.DISSIMILARITY].sum() / windows),
+        entropy=float(g[..., Features.ENTROPY].sum() / windows)
     )
 
     if (i == j).all():
