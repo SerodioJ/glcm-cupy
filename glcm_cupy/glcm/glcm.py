@@ -16,7 +16,7 @@ except:
     USE_CUCIM = False
 
 from glcm_cupy.conf import *
-from glcm_cupy.glcm_base import GLCMBase
+from glcm_cupy.glcm_base import GLCMBase, GLCMOnly
 
 
 class Direction(Enum):
@@ -86,6 +86,64 @@ def glcm(
         max_partition_size=max_partition_size,
         max_threads=max_threads,
         features=features,
+        normalized_features=normalized_features,
+        step_size=step_size,
+        directions=directions,
+        skip_border=skip_border,
+        verbose=verbose
+    ).run(im)
+
+
+def glcm_only(
+    im: ndarray,
+    step_size: int = 1,
+    radius: int = 2,
+    bin_from: int = 256,
+    bin_to: int = 256,
+    directions: Sequence[Direction] = (Direction.EAST,
+                                       Direction.SOUTH_EAST,
+                                       Direction.SOUTH,
+                                       Direction.SOUTH_WEST),
+    max_partition_size: int = MAX_PARTITION_SIZE,
+    max_threads: int = MAX_THREADS,
+    normalized_features: bool = True,
+    skip_border: bool = False,
+    verbose: bool = True
+) -> ndarray:
+    """
+    Notes:
+        features is a set of named integers, defined in glcm_cupy.conf
+
+    Examples:
+        To scale image values from a 128 max value to 32, we use
+        bin_from = 128, bin_to = 32.
+
+        The range will collapse from 128 to 32.
+
+        This optimizes GLCM speed.
+
+    Args:
+        im: Image to Process
+        step_size: Stride Between GLCMs
+        radius: Radius of Window
+        bin_from: Binarize from.
+        bin_to: Binarize to.
+        directions: Directions to pair the windows.
+        max_partition_size: Maximum number of windows to parse at once
+        max_threads: Maximum threads for CUDA
+        normalized_features: Whether to normalize features to [0, 1]
+        skip_border: Wheter to skip border of interfacing windows. When skipping border, result is the same as a GLCM calculated on each 7x7 window, without neighbourhood information. Default is False.
+        verbose: Whether to enable TQDM logging
+
+    Returns:
+        GLCM Features
+    """
+    return GLCMatrix(
+        radius=radius,
+        bin_from=bin_from,
+        bin_to=bin_to,
+        max_partition_size=max_partition_size,
+        max_threads=max_threads,
         normalized_features=normalized_features,
         step_size=step_size,
         directions=directions,
@@ -303,3 +361,15 @@ class GLCM(GLCMBase):
             raise ValueError("direction must be of class Direction.")
 
         return i, j
+
+
+@dataclass
+class GLCMatrix(GLCMOnly, GLCM):
+    step_size: int = 1
+    directions: Sequence[Direction] = (
+        Direction.EAST,
+        Direction.SOUTH_EAST,
+        Direction.SOUTH,
+        Direction.SOUTH_WEST
+    )
+    skip_border: bool = False
