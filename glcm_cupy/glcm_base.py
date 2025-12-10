@@ -637,4 +637,4 @@ class GLCMOnly:
                 self.ar_features
             )
         )
-        return self.ar_glcm
+        return self.ar_glcm[:no_of_windows]
